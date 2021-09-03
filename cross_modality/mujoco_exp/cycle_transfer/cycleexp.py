@@ -1,6 +1,5 @@
-
-
 import os
+import time
 import torch
 import argparse
 from torchvision import transforms
@@ -23,26 +22,27 @@ def train(opt):
     model.img_policy.online_test(model.netG_B, 1)
 
     niter = 0
+    global_tic = time.time()
     for epoch_id in range(opt.epoch_size):
         for batch_id, data in enumerate(dataset):
             model.set_input(data)
             model.optimize_parameters()
 
             niter += 1
-            if (batch_id) % opt.display_gap == 0:
+            if niter % opt.display_gap == 0:
                 errors = model.get_current_errors()
-                display = '===> Epoch[{}]({}/{})'.format(epoch_id, batch_id, len(dataset))
+                display = '===> Epoch[{}]({}/{})'.format(epoch_id, batch_id + 1, len(dataset))
                 for key, value in errors.items():
                     display += '{}:{:.4f}  '.format(key, value)
                     tensor_writer.add_scalar(key, value, niter)
-                print(display)
+                print(display, '{:.3f}'.format(time.time() - global_tic))
+                global_tic = time.time()
 
-            if (batch_id) % opt.save_weight_gap == 0:
-                path = os.path.join(img_logs, 'imgA_{}_{}.jpg'.format(epoch_id, batch_id+1))
-                model.visual(path)
-                model.save(weight_logs.replace('weights','weights_{}'.format(niter)))
-
-                model.img_policy.online_test(model.netG_B,1)
+        # path = os.path.join(img_logs, 'imgA_{}.jpg'.format(epoch_id))
+        # model.visual(path)
+        model.save(weight_logs.replace('weights','weights_{}'.format(epoch_id)))
+        rewards = model.img_policy.online_test(model.netG_B, 10)
+        tensor_writer.add_scalar('reward', rewards.mean(), epoch_id)
 
 def eval(opt):
     img_logs, weight_logs,tensor_writer = init_logs(opt)

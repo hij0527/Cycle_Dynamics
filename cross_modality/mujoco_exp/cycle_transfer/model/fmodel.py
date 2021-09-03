@@ -12,7 +12,7 @@ import sys
 sys.path.append('../')
 from data.gymdata import Robotdata,RobotStackFdata
 
-class Fmodel(nn.Module):
+class Fmodel_old(nn.Module):
     def __init__(self,opt):
         super(Fmodel,self).__init__()
         self.opt = opt
@@ -39,6 +39,25 @@ class Fmodel(nn.Module):
         action_feature = self.actionfc(action)
         feature = torch.cat((state_feature,action_feature),1)
         return self.predfc(feature)
+
+class Fmodel(nn.Module):
+    def __init__(self,opt):
+        super(Fmodel,self).__init__()
+        self.opt = opt
+        self.state_dim = opt.state_dim
+        self.action_dim = opt.action_dim
+        self.fc = nn.Sequential(
+            nn.Linear(self.state_dim + self.action_dim, 64),
+            nn.ReLU(),
+            nn.Linear(64,128),
+            nn.ReLU(),
+            nn.Linear(128,32),
+            nn.ReLU(),
+            nn.Linear(32,self.state_dim)
+        )
+
+    def forward(self, state,action):
+        return self.fc(torch.cat((state, action), 1))
 
 class AGmodel(nn.Module):
     def __init__(self,flag='A2B',opt=None):

@@ -7,7 +7,7 @@ def get_options():
     parser = argparse.ArgumentParser(description='toy experiments')
     parser.add_argument('--istrain', type=bool, default=True, help='whether training or test')
     parser.add_argument('--num_workers', type=int, default=32, help='num workers')
-    parser.add_argument('--epoch_size', type=int, default=100, help='epoch size')
+    parser.add_argument('--epoch_size', type=int, default=50, help='epoch size')
     parser.add_argument('--batch_size', type=int, default=32, help='batch size')
     parser.add_argument('--device_ids', type=int, nargs='+', default=[0,1,2,3], help='batch size')
     parser.add_argument('--exp_id', type=int, default=5, help='experiment id')
@@ -22,7 +22,7 @@ def get_options():
     parser.add_argument('--pretrain_f', type=bool, default=False, help='whether pretrained forward model')
     parser.add_argument('--action_fix',type=bool,default=True,help='which action model to choose')
     parser.add_argument('--loss', type=str, default='l1', help='loss function')
-    parser.add_argument('--f_epoch', type=int, default=30, help='loss function')
+    parser.add_argument('--f_epoch', type=int, default=20, help='loss function')
 
     parser.add_argument("--env", default="HalfCheetah-v2")
     parser.add_argument("--force", type=bool, default=False)
@@ -43,8 +43,8 @@ def get_options():
     parser.add_argument('--save_weight_gap', type=int, default=1000, help = 'training output frequency')
 
     parser.add_argument('--lambda_F', type=float, default=200., help='coefficient of lambdaF')
-    parser.add_argument('--lambda_G0', type=float, default=10, help='coefficient of lambdaG0')
-    parser.add_argument('--lambda_G1', type=float, default=10, help='coefficient of lambdaG1')
+    parser.add_argument('--lambda_G0', type=float, default=3., help='coefficient of lambdaG0')
+    parser.add_argument('--lambda_G1', type=float, default=0., help='coefficient of lambdaG1')
     parser.add_argument('--lambda_G2', type=float, default=0., help='coefficient of lambdaG2')
     parser.add_argument('--lambda_C', type=float, default=100., help='coefficient of lambdaC')
     parser.add_argument('--lambda_AC', type=float, default=100., help='coefficient of lambdaAC')

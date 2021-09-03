@@ -134,7 +134,7 @@ class ImgPolicy:
                     episode_r += r
                 reward_buffer.append(episode_r)
                 l1_loss = abs(np.array(pred)-np.array(gt)).mean()
-                print(episode_r,l1_loss)
+                # print(episode_r,l1_loss)
 
             episode_r = sum(reward_buffer)
             print('average reward: {}'.format(episode_r/episode_n))

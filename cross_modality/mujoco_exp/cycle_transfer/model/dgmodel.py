@@ -194,11 +194,14 @@ class StateD(nn.Module):
         self.state_fc = nn.Sequential(
             nn.Linear(self.state_dim,32),
             nn.ReLU(),
-            nn.Linear(32,128),
+            ## nn.Linear(32,128),
+            nn.Linear(32,64),
             nn.ReLU(),
-            nn.Linear(128,64),
+            ## nn.Linear(128,64),
+            nn.Linear(64,128),
             nn.ReLU(),
-            nn.Linear(64,32),
+            ## nn.Linear(64,32),
+            nn.Linear(128,32),
             nn.ReLU(),
             nn.Linear(32,2)
         )

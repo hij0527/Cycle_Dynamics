@@ -14,9 +14,15 @@ class PixelEncoder(nn.Module):
         self.stack_n = opt.stack_n
         self.backbone = resnet18(pretrained=True)
         self.fc = nn.Sequential(
-            nn.Linear(1000*self.stack_n,64),
+            ## nn.Linear(1000*self.stack_n,64),
+            nn.Linear(1000*self.stack_n,256),
             nn.ReLU(),
-            nn.Linear(64,self.state_dim),
+            nn.Linear(256,64),
+            nn.ReLU(),
+            nn.Linear(64,32),
+            nn.ReLU(),
+            ## nn.Linear(64,self.state_dim),
+            nn.Linear(32,self.state_dim),
             # nn.Tanh()
         )
         self.max = np.array([3,1.1,1.1,3,3,2,2.5,2.5])

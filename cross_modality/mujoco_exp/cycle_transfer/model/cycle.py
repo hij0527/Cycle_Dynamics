@@ -81,9 +81,10 @@ class CycleGANModel():
         data_size = len(dataF)
         for epoch in range(self.opt.f_epoch):
             epoch_loss, cmp_loss = 0, 0
-            if epoch in [3,7,10,15]:
+            if epoch > 0 and epoch % 3 == 0:
                 lr *= 0.5
-                optimizer = torch.optim.Adam(self.netF_A.parameters(), lr=lr)
+                for param_group in optimizer.param_groups:
+                    param_group['lr'] = lr
             for i,item in enumerate(tqdm(dataF)):
                 if i>data_size*0.8:
                     continue
