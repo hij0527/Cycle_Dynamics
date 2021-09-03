@@ -6,12 +6,15 @@ import argparse
 def get_options():
     parser = argparse.ArgumentParser(description='toy experiments')
     parser.add_argument('--istrain', type=bool, default=True, help='whether training or test')
+    parser.add_argument('--num_workers', type=int, default=32, help='num workers')
     parser.add_argument('--epoch_size', type=int, default=100, help='epoch size')
     parser.add_argument('--batch_size', type=int, default=32, help='batch size')
-    parser.add_argument('--device_ids', type=list, default=[0,1,2,3], help='batch size')
+    parser.add_argument('--device_ids', type=int, nargs='+', default=[0,1,2,3], help='batch size')
     parser.add_argument('--exp_id', type=int, default=5, help='experiment id')
     parser.add_argument('--test_id1', type=int, default=1, help='dataset test id1')
     parser.add_argument('--test_id2', type=int, default=1, help='dataset test id2')
+    parser.add_argument('--seed', type=int, default=0, help='random seed')
+    parser.add_argument('--policy_seed', type=int, default=0, help='seed used for policy training')
 
     parser.add_argument('--clip_range', type=int, default=5, help='action dimension')
     parser.add_argument('--stack_n', type=int, default=3, help='action dimension')
@@ -34,8 +37,8 @@ def get_options():
 
     parser.add_argument('--data_type1', type=str, default='base', help='data type')
     parser.add_argument('--data_type2', type=str, default='base', help='data type')
-    parser.add_argument('--data_id1', type=int, default=1, help='data id')
-    parser.add_argument('--data_id2', type=int, default=1, help='data id')
+    parser.add_argument('--data_id1', type=int, default=0, help='data id')
+    parser.add_argument('--data_id2', type=int, default=0, help='data id')
     parser.add_argument('--display_gap', type=int, default=50, help = 'training output frequency')
     parser.add_argument('--save_weight_gap', type=int, default=1000, help = 'training output frequency')
 

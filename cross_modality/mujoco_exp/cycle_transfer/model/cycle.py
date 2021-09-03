@@ -24,7 +24,6 @@ class CycleGANModel():
         self.opt = opt
         self.isTrain = opt.istrain
         self.env = gym.make(opt.env)
-        self.env.seed(0)
         if self.opt.state_dim == 0:
             self.state_dim = self.env.observation_space.shape[0]
         else:
@@ -33,7 +32,7 @@ class CycleGANModel():
         if self.opt.action_dim == 0:
             self.action_dim = self.env.action_space.shape[0]
         else:
-            self.action_dim = self.opt.state_dim
+            self.action_dim = self.opt.action_dim
 
         opt.state_dim = self.state_dim
         opt.action_dim = self.action_dim
@@ -273,14 +272,14 @@ class CycleGANModel():
 
 
     def get_current_errors(self):
-        ret_errors = OrderedDict([('L_t0',self.loss_state_lt0), ('L_t1',self.loss_state_lt1),
-                                  ('D_B', self.loss_D_B), ('G_B0', self.loss_G_Bt0),
-                                  ('G_B1', self.loss_G_Bt1), ('Cyc',  self.loss_cycle)])
+        ret_errors = OrderedDict([('L_t0', 0), ('L_t1', 0),
+                                  ('D_B', 0), ('G_B0', 0),
+                                  ('G_B1', 0), ('Cyc', 0)])
         for errors in self.error:
             for key, value in errors.items():
                 ret_errors[key] += value
         for key, value in ret_errors.items():
-            ret_errors[key] /= (len(self.error)+1)
+            ret_errors[key] /= len(self.error)
         self.error = []
         return ret_errors
 

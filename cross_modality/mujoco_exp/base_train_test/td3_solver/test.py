@@ -9,7 +9,7 @@ import TD3
 
 def safe_path(path):
     if not os.path.exists(path):
-        os.mkdir(path)
+        os.makedirs(path)
     return path
 
 # Runs policy for X episodes and returns average reward
@@ -23,9 +23,9 @@ def eval_policy(policy, env_name, seed, eval_episodes=10):
         state, done = eval_env.reset(), False
         while not done:
             # state = np.zeros_like(state)
-            # action = policy.select_action(np.array(state))
+            action = policy.select_action(np.array(state))
             # state[:4] = 0
-            action = eval_env.action_space.sample()
+            # action = eval_env.action_space.sample()
             state, reward, done, _ = eval_env.step(action)
             avg_reward += reward
 
@@ -38,9 +38,9 @@ def eval_policy(policy, env_name, seed, eval_episodes=10):
 
 
 def eval(args):
-    file_name = f"{args.policy}_{args.env}_{args.seed}"
+    file_name = f"{args.policy}_{args.env}_{args.policy_seed}"
     print("---------------------------------------")
-    print(f"Policy: {args.policy}, Env: {args.env}, Seed: {args.seed}")
+    print(f"Policy: {args.policy} (seed: {args.policy_seed}), Env: {args.env}, Seed: {args.seed}")
     print("---------------------------------------")
 
     log_path = safe_path(os.path.join(args.log_root, '{}_base'.format(args.env)))
@@ -85,8 +85,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--policy", default="TD3")  # Policy name (TD3, DDPG or OurDDPG)
-    parser.add_argument("--env", default="Reacher-v2")  # OpenAI gym environment name
+    parser.add_argument("--env", default="HalfCheetah-v2")  # OpenAI gym environment name
     parser.add_argument("--seed", default=0, type=int)  # Sets Gym, PyTorch and Numpy seeds
+    parser.add_argument("--policy_seed", default=0, type=int)  # Seed used for policy training
     parser.add_argument("--start_timesteps", default=25e3, type=int)  # Time steps initial random policy is used
     parser.add_argument("--eval_freq", default=5e3, type=int)  # How often (time steps) we evaluate
     parser.add_argument("--max_timesteps", default=1e6, type=int)  # Max time steps to run environment
@@ -98,7 +99,7 @@ if __name__ == "__main__":
     parser.add_argument("--noise_clip", default=0.5)  # Range to clip target policy noise
     parser.add_argument("--policy_freq", default=2, type=int)  # Frequency of delayed policy updates
 
-    parser.add_argument("--log_root", default="../../../../../../cross_modality")
+    parser.add_argument("--log_root", default="../../../../../logs/cross_modality")
     parser.add_argument("--load_model", default="default")  # Model load file name, "" doesn't load, "default" uses file_name
     args = parser.parse_args()
 

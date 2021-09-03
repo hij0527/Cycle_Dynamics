@@ -57,7 +57,7 @@ class TD3(object):
         pred_state[:output.shape[0]] = output
         pred_state = pred_state * self.std + self.mean
         pred_state = pred_state.cpu().data.numpy()
-        pred_state[2:4] = goal
+        # pred_state[2:4] = goal
         state = torch.FloatTensor(pred_state.reshape(1, -1)).cuda()
         action = self.actor(state).cpu().data.numpy().flatten()
         return action,pred_state
@@ -78,8 +78,8 @@ class Stackimg:
     def push(self,img):
         img = Image.fromarray(img)
         img = transforms.ToTensor()(img)
-        # if self.env == 'HalfCheetah-v2':
-        #     img = img[:, 128:220, 36:220]
+        if self.env == 'HalfCheetah-v2':
+            img = img[:, 128:220, 36:220]
         # elif self.env == "InvertedDoublePendulum-v2":
         #     img = img[:, 92:156, 54:202]
         # elif self.env == "Reacher-v2":
@@ -99,15 +99,15 @@ class ImgPolicy:
     def __init__(self, opt):
         self.opt = opt
         self.env = gym.make(opt.env)
-        self.env.seed(0)
-        random.seed(0)
+        self.env.seed(opt.seed)
+        random.seed(opt.seed)
         self.state_dim = self.env.observation_space.shape[0]
         self.action_dim = self.env.action_space.shape[0]
         self.max_action = float(self.env.action_space.high[0])
         self.log_root = opt.log_root
         self.episode_n = opt.episode_n
         self.policy_path = os.path.join(opt.log_root,
-                        '{}_base/models/TD3_{}_0_actor'.format(opt.env,opt.env))
+                        '{}_base/models/TD3_{}_{}_actor'.format(opt.env,opt.env,opt.policy_seed))
         try:
             self.policy = TD3(self.policy_path,self.state_dim,self.action_dim,self.max_action,opt)
             print(self.policy_path)

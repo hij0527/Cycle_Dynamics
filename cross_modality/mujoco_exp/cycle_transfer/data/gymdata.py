@@ -97,7 +97,7 @@ class Robotdata(Data.Dataset):
             dataset = dataset,
             batch_size = opt.batch_size,
             shuffle = opt.istrain,
-            num_workers = 32
+            num_workers = opt.num_workers
         )
 
 
@@ -214,7 +214,7 @@ class RobotStackdata(Data.Dataset):
             dataset = dataset,
             batch_size = opt.batch_size,
             shuffle = opt.istrain,
-            num_workers = 32
+            num_workers = opt.num_workers
         )
 
 
@@ -316,8 +316,8 @@ class RobotStackFdata(Data.Dataset):
         return item2
 
     def __len__(self):
-        # return self.sample_num1
-        return 100000
+        return self.sample_num1
+        # return 100000
 
     @classmethod
     def get_loader(cls,opt=None):
@@ -326,7 +326,7 @@ class RobotStackFdata(Data.Dataset):
             dataset = dataset,
             batch_size = opt.batch_size,
             shuffle = opt.istrain,
-            num_workers = 8
+            num_workers = opt.num_workers
         )
 
 

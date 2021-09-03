@@ -7,7 +7,7 @@ from torchvision import transforms
 
 from utils.utils import init_logs
 from data.gymdata import RobotStackFdata
-from data.gymdata import RobotStackdata as Robotdata
+from data.gymdata import RobotStackdata
 from model.cycle import CycleGANModel
 from options import get_options
 
@@ -15,7 +15,7 @@ from options import get_options
 def train(opt):
     img_logs, weight_logs,tensor_writer = init_logs(opt)
     model = CycleGANModel(opt)
-    dataset = Robotdata.get_loader(opt)
+    dataset = RobotStackdata.get_loader(opt)
     fdataset = RobotStackFdata.get_loader(opt)
     model.train_forward_state(fdataset,opt.pretrain_f)
     model.parallel_init(device_ids=opt.device_ids)
@@ -52,7 +52,7 @@ def eval(opt):
     model.load(weight_logs)
     # model.img_policy.online_test(model.netG_B,5)
 
-    dataset = Robotdata.get_loader(opt)
+    dataset = RobotStackdata.get_loader(opt)
     ave_loss = {}
     for batch_id, data in enumerate(dataset):
         model.set_input(data)
@@ -88,9 +88,9 @@ if __name__ == '__main__':
     # opt.pretrain_f = False
 
     train(opt)
-    opt.istrain = False
-    with torch.no_grad():
-        eval(opt)
+    # opt.istrain = False
+    # with torch.no_grad():
+    #     eval(opt)
 
 
 

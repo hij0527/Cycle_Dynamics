@@ -58,16 +58,19 @@ class CycleData:
     def __init__(self, opt):
         self.opt = opt
         self.env = gym.make(opt.env)
-        self.env.seed(0)
-        random.seed(0)
+        self.env.seed(opt.seed)
+        random.seed(opt.seed)
         self.state_dim = self.env.observation_space.shape[0]
         self.action_dim = self.env.action_space.shape[0]
         self.max_action = float(self.env.action_space.high[0])
         self.log_root = opt.log_root
         self.episode_n = opt.episode_n
         self.policy_path = os.path.join(opt.log_root,
-                        '{}_base/models/TD3_{}_0_actor'.format(opt.env,opt.env))
-        # self.policy = TD3(self.policy_path,self.state_dim,self.action_dim,self.max_action)
+                        '{}_base/models/TD3_{}_{}_actor'.format(opt.env,opt.env,opt.policy_seed))
+        if opt.random < 1:
+            self.policy = TD3(self.policy_path,self.state_dim,self.action_dim,self.max_action)
+        else:
+            self.policy = None
         self.setup(opt)
         self.create_data()
         # self.count = Count(opt)
@@ -92,8 +95,10 @@ class CycleData:
             self.check_and_save(path)
             reward_r = 0
             while not done:
-                action = self.env.action_space.sample()
-                # action = self.policy.select_action(observation)
+                if np.random.random() < opt.random:
+                    action = self.env.action_space.sample()
+                else:
+                    action = self.policy.select_action(observation)
                 observation, reward, done, info = self.env.step(action)
                 self.add_action(action)
                 self.add_observation(observation)
@@ -166,8 +171,11 @@ if __name__ == '__main__':
     parser.add_argument("--force", type=bool, default=False)
     parser.add_argument("--log_root", default="../../../../logs/cross_modality")
     parser.add_argument('--data_type', type=str, default='base', help='data type')
-    parser.add_argument('--data_id', type=int, default=4, help='data id')
+    parser.add_argument('--data_id', type=int, default=0, help='data id')
     parser.add_argument('--episode_n', type=int, default=400, help='episode number')
+    parser.add_argument('--random', type=float, default=1.)
+    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--policy_seed', type=int, default=0)
     opt = parser.parse_args()
 
     dataset = CycleData(opt)
