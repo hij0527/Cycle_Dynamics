@@ -13,10 +13,10 @@ import matplotlib.pyplot as plt
 import itertools
 
 
-from model.dgmodel import state2img,imgDmodel,stateDmodel
+from model.dgmodel import stateDmodel
 from model.encoder4 import PixelEncoder as img2state
 from utils.utils import ImagePool,GANLoss
-from model.fmodel import Fmodel,ImgFmodel,ADmodel,AGmodel
+from model.fmodel import Fmodel
 from model.imgpolicy import ImgPolicy
 
 class CycleGANModel():
@@ -40,49 +40,25 @@ class CycleGANModel():
         self.img_policy = ImgPolicy(opt)
         self.Tensor = torch.cuda.FloatTensor
 
-        self.netG_A = state2img(opt=self.opt).cuda()
         self.netG_B = img2state(opt=self.opt).cuda()
-        self.net_action_G_A = AGmodel(flag='A2B',opt=self.opt).cuda()
-        self.net_action_G_B = AGmodel(flag='B2A',opt=self.opt).cuda()
         self.netF_A = Fmodel(self.opt).cuda()
 
         self.reset_buffer()
 
         # if self.isTrain:
-        self.netD_A = imgDmodel(opt=self.opt).cuda()
         self.netD_B = stateDmodel(opt=self.opt).cuda()
-        self.net_action_D_A = ADmodel(opt=self.opt).cuda()
-        self.net_action_D_B = ADmodel(opt=self.opt).cuda()
 
         # if self.isTrain:
         self.fake_A_pool = ImagePool(pool_size=128)
-        self.fake_B_pool = ImagePool(pool_size=128)
-        self.fake_action_A_pool = ImagePool(pool_size=128)
-        self.fake_action_B_pool = ImagePool(pool_size=128)
         # define loss functions
         self.criterionGAN = GANLoss(tensor=self.Tensor).cuda()
         if opt.loss == 'l1':
             self.criterionCycle = nn.L1Loss()
         elif opt.loss == 'l2':
             self.criterionCycle = nn.MSELoss()
-        self.ImgcriterionCycle = nn.MSELoss()
-        self.StatecriterionCycle = nn.L1Loss()
         # initialize optimizers
-        parameters = [{'params':self.netF_A.parameters(),'lr':self.opt.F_lr},
-                     # {'params': self.netF_B.parameters(), 'lr': self.opt.F_lr},
-                     # {'params': self.netG_A.parameters(), 'lr': self.opt.G_lr},
-                     {'params':self.netG_B.parameters(),'lr':self.opt.G_lr},]
-                     # {'params': self.net_action_G_A.parameters(), 'lr': self.opt.A_lr},
-                     # {'params': self.net_action_G_B.parameters(), 'lr': self.opt.A_lr}]
-        self.optimizer_G = torch.optim.Adam(parameters)
-        self.optimizer_D_A = torch.optim.Adam(self.netD_A.parameters())
+        self.optimizer_G = torch.optim.Adam(self.netG_B.parameters(), lr=self.opt.G_lr)
         self.optimizer_D_B = torch.optim.Adam(self.netD_B.parameters())
-        self.optimizer_action_D_A = torch.optim.Adam(self.net_action_D_A.parameters())
-        self.optimizer_action_D_B = torch.optim.Adam(self.net_action_D_B.parameters())
-
-        self.use_mask = opt.use_mask
-        self.mask = np.array(opt.mask)
-        self.mask = torch.tensor(self.mask).float()
 
         print('---------- Networks initialized ---------------')
         print('-----------------------------------------------')
@@ -90,16 +66,11 @@ class CycleGANModel():
     def parallel_init(self,device_ids=[0]):
         self.netG_B = torch.nn.DataParallel(self.netG_B,device_ids=device_ids)
         self.netF_A = torch.nn.DataParallel(self.netF_A,device_ids=device_ids)
-        self.netD_A = torch.nn.DataParallel(self.netD_A,device_ids=device_ids)
         self.netD_B = torch.nn.DataParallel(self.netD_B,device_ids=device_ids)
 
     def train_forward_state(self,dataF,pretrained=False):
-        if self.use_mask:
-            weight_path = os.path.join(self.opt.log_root, '{}_data'.format(self.opt.env),
-                                   '{}_{}/pred_mask.pth'.format(self.opt.data_type1, self.opt.data_id1))
-        else:
-            weight_path = os.path.join(self.opt.log_root, '{}_data'.format(self.opt.env),
-                                       '{}_{}/pred.pth'.format(self.opt.data_type1, self.opt.data_id1))
+        weight_path = os.path.join(self.opt.log_root, '{}_data'.format(self.opt.env),
+                                   '{}_{}/pred.pth'.format(self.opt.data_type1, self.opt.data_id1))
         if pretrained:
             self.netF_A.load_state_dict(torch.load(weight_path))
             print('forward model has loaded!')
@@ -121,10 +92,7 @@ class CycleGANModel():
                 action = action.float().cuda()
                 result = result.float().cuda()
                 out = self.netF_A(state, action)
-                if self.use_mask:
-                    loss = ((out-result)*(self.mask).cuda()).abs().mean()
-                else:
-                    loss = loss_fn(out, result)
+                loss = loss_fn(out, result)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -215,13 +183,7 @@ class CycleGANModel():
 
         # cycle loss
         pred_At1 = self.netG_B(self.real_Bt1)
-        cycle_label = torch.zeros_like(fake_At1).float().cuda()
-
-        if self.use_mask:
-            diff = (fake_At1-pred_At1)*self.mask.cuda(device=fake_At1.device)
-        else:
-            diff = fake_At1-pred_At1
-        loss_cycle = self.criterionCycle(diff,cycle_label) * lambda_F
+        loss_cycle = self.criterionCycle(fake_At1, pred_At1) * lambda_F
 
         pred_fake = self.netD_B(pred_At1)
         loss_G_Bt2 = self.criterionGAN(pred_fake, True) * lambda_G_B2
@@ -295,13 +257,6 @@ class CycleGANModel():
             os.mkdir(path)
         self.save_network(self.netG_B, 'G_B', path)
         self.save_network(self.netD_B, 'D_B', path)
-        self.save_network(self.netG_A, 'G_A', path)
-        self.save_network(self.netD_A, 'D_A', path)
-
-        self.save_network(self.net_action_G_B, 'action_G_B', path)
-        self.save_network(self.net_action_D_B, 'action_D_B', path)
-        self.save_network(self.net_action_G_A, 'action_G_A', path)
-        self.save_network(self.net_action_D_A, 'action_D_A', path)
 
     def load_network(self, network, network_label, path):
         weight_filename = 'model_{}.pth'.format(network_label)
@@ -311,13 +266,6 @@ class CycleGANModel():
     def load(self,path):
         self.load_network(self.netG_B, 'G_B', path)
         self.load_network(self.netD_B, 'D_B', path)
-        self.load_network(self.netG_A, 'G_A', path)
-        self.load_network(self.netD_A, 'D_A', path)
-
-        self.load_network(self.net_action_G_B, 'action_G_B', path)
-        self.load_network(self.net_action_D_B, 'action_D_B', path)
-        self.load_network(self.net_action_G_A, 'action_G_A', path)
-        self.load_network(self.net_action_D_A, 'action_D_A', path)
 
     def show_points(self,gt_data,pred_data):
         print(abs(gt_data-pred_data).mean(0))
