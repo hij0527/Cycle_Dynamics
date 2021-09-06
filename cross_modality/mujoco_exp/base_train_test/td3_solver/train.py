@@ -9,14 +9,14 @@ import TD3
 
 def safe_path(path):
 	if not os.path.exists(path):
-		os.mkdir(path)
+		os.makedirs(path)
 	return path
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environment
 def eval_policy(policy, eval_env, seed, eval_episodes=10):
 	# eval_env = gym.make(env_name)
-	eval_env.seed(seed + 100)
+	# eval_env.seed(seed + 100)
 
 	avg_reward = 0.
 	for _ in range(eval_episodes):
@@ -44,9 +44,11 @@ def main(args):
 	model_path = safe_path(os.path.join(log_path, 'models'))
 
 	env = gym.make(args.env)
+	eval_env = gym.make(args.env)
 
 	# Set seeds
 	env.seed(args.seed)
+	eval_env.seed(args.seed + 100)
 	torch.manual_seed(args.seed)
 	np.random.seed(args.seed)
 
@@ -73,7 +75,7 @@ def main(args):
 	replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
 
 	# Evaluate untrained policy
-	evaluations = [eval_policy(policy, env, args.seed)]
+	evaluations = [eval_policy(policy, eval_env, args.seed)]
 
 	state, done = env.reset(), False
 	episode_reward = 0
@@ -119,7 +121,7 @@ def main(args):
 
 		# Evaluate episode
 		if (t + 1) % args.eval_freq == 0:
-			evaluations.append(eval_policy(policy, env, args.seed))
+			evaluations.append(eval_policy(policy, eval_env, args.seed))
 			np.save(os.path.join(result_path, '{}'.format(file_name)), evaluations)
 			if args.save_model: policy.save(os.path.join(model_path, '{}'.format(file_name)))
 
