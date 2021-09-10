@@ -102,8 +102,9 @@ class Robotdata(Data.Dataset):
 
 
 class RobotStackdata(Data.Dataset):
-    def __init__(self,opt=None):
+    def __init__(self,opt=None, load_img1=False):
         self.opt = opt
+        self.load_img1 = load_img1
         self.istrain = opt.istrain
         self.log_root = opt.log_root
         self.env_logs = os.path.join(self.log_root, '{}_data'.format(self.opt.env))
@@ -113,19 +114,14 @@ class RobotStackdata(Data.Dataset):
         self.action_dim = opt.action_dim
         self.stack_n = opt.stack_n
         self.img_size = opt.img_size
-        self.trans = transforms.Compose([
-            transforms.Resize((256,256)),
-            transforms.ToTensor(),
-            transforms.Normalize([0.5,0.5,0.5],[0.5,0.5,0.5])
-        ])
         self.trans_stack = transforms.Compose([
             transforms.Resize((self.img_size, self.img_size)),
             transforms.ToTensor(),
             transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
         ])
-        self.img1A,self.img1B,self.state1A,self.state1B,self.action1 = self.load_data(self.data_root1)
-        self.img2A, self.img2B, self.state2A, self.state2B, self.action2 = self.load_data(self.data_root2)
-        self.sample_num1 = len(self.img1A)
+        self.img1A,self.img1B,self.state1A,self.state1B,self.action1 = self.load_data(self.data_root1, self.load_img1)
+        self.img2A, self.img2B, self.state2A, self.state2B, self.action2 = self.load_data(self.data_root2, True)
+        self.sample_num1 = len(self.state1A)
         self.sample_num2 = len(self.img2A)
 
         self.mean = self.state1A.mean(0)
@@ -135,18 +131,17 @@ class RobotStackdata(Data.Dataset):
         self.state2A = (self.state2A-self.mean)/self.std
         self.state2B = (self.state2B-self.mean)/self.std
 
-    def load_data(self,data_root):
-        img_path = os.path.join(data_root, 'imgs')
+    def load_data(self,data_root, load_img):
         now_state = np.load(os.path.join(data_root,'now_state.npy'))[:,:self.state_dim]
         next_state = np.load(os.path.join(data_root,'next_state.npy'))[:,:self.state_dim]
         action = np.load(os.path.join(data_root,'action.npy'))
-        now_img,next_img = self.get_imgs(img_path)
+        now_img,next_img = self.get_imgs(os.path.join(data_root, 'imgs')) if load_img else (None, None)
 
         pair_n = now_state.shape[0]
         assert (pair_n==next_state.shape[0])
         assert (pair_n==action.shape[0])
-        assert (pair_n==len(now_img))
-        assert (pair_n==len(next_img))
+        assert (now_img is None or pair_n==len(now_img))
+        assert (next_img is None or pair_n==len(next_img))
 
         return now_img,next_img,now_state,next_state,action
 
@@ -196,12 +191,12 @@ class RobotStackdata(Data.Dataset):
 
     def __getitem__(self, item):
         if self.opt.istrain:
-            item1,img_gt_state = self.get_img_sample(self.sample_num1)
-            item2 = self.get_state_sample(self.sample_num2)
+            item1,img_gt_state = self.get_img_sample(self.sample_num2)
+            item2 = self.get_state_sample(self.sample_num1)
             return item1,item2,img_gt_state
         else:
-            item1,img_gt_state = self.get_img_sample(self.sample_num1,item)
-            item2 = self.get_state_sample(self.sample_num2,item)
+            item1,img_gt_state = self.get_img_sample(self.sample_num2,item)
+            item2 = self.get_state_sample(self.sample_num1,item)
             return item1,item2,img_gt_state
 
     def __len__(self):
@@ -225,86 +220,29 @@ class RobotStackFdata(Data.Dataset):
         self.log_root = opt.log_root
         self.env_logs = os.path.join(self.log_root, '{}_data'.format(self.opt.env))
         self.data_root1 = os.path.join(self.env_logs, '{}_{}'.format(self.opt.data_type1, self.opt.data_id1))
-        self.data_root2 = os.path.join(self.env_logs, '{}_{}'.format(self.opt.data_type2, self.opt.data_id2))
         self.state_dim = opt.state_dim
         self.action_dim = opt.action_dim
         self.stack_n = opt.stack_n
         self.img_size = opt.img_size
-        self.trans = transforms.Compose([
-            transforms.Resize((256,256)),
-            transforms.ToTensor(),
-            transforms.Normalize([0.5,0.5,0.5],[0.5,0.5,0.5])
-        ])
-        self.trans_stack = transforms.Compose([
-            transforms.Resize((self.img_size, self.img_size)),
-            transforms.ToTensor(),
-            transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
-        ])
-        self.img1A,self.img1B,self.state1A,self.state1B,self.action1 = self.load_data(self.data_root1)
-        self.img2A, self.img2B, self.state2A, self.state2B, self.action2 = self.load_data(self.data_root2)
+        self.state1A,self.state1B,self.action1 = self.load_data(self.data_root1)
 
         self.mean = self.state1A.mean(0)
         self.std = self.state1A.std(0)
         self.state1A = (self.state1A-self.mean)/self.std
         self.state1B = (self.state1B-self.mean)/self.std
-        self.state2A = (self.state2A-self.mean)/self.std
-        self.state2B = (self.state2B-self.mean)/self.std
 
-        split_n1 = int(len(self.img1A) *0.8)
-        split_n2 = int(len(self.img2A) *0.8)
-        if self.opt.istrain:
-            self.img1A = self.img1A[:split_n1]
-            self.img1B = self.img1B[:split_n1]
-            self.state1A = self.state1A[:split_n1]
-            self.state1B = self.state1B[:split_n1]
-            self.action1 = self.action1[:split_n1]
-            self.img2A = self.img2A[:split_n2]
-            self.img2B = self.img2B[:split_n2]
-            self.state2A = self.state2A[:split_n2]
-            self.state2B = self.state2B[:split_n2]
-            self.action2 = self.action2[:split_n2]
-        else:
-            self.img1A = self.img1A[split_n1:]
-            self.img1B = self.img1B[split_n1:]
-            self.state1A = self.state1A[split_n1:]
-            self.state1B = self.state1B[split_n1:]
-            self.action1 = self.action1[split_n1:]
-            self.img2A = self.img2A[split_n2:]
-            self.img2B = self.img2B[split_n2:]
-            self.state2A = self.state2A[split_n2:]
-            self.state2B = self.state2B[split_n2:]
-            self.action2 = self.action2[split_n2:]
-
-        self.sample_num1 = len(self.img1A)
-        self.sample_num2 = len(self.img2A)
+        self.sample_num1 = len(self.state1A)
 
     def load_data(self,data_root):
-        img_path = os.path.join(data_root, 'imgs')
         now_state = np.load(os.path.join(data_root,'now_state.npy'))[:,:self.state_dim]
         next_state = np.load(os.path.join(data_root,'next_state.npy'))[:,:self.state_dim]
         action = np.load(os.path.join(data_root,'action.npy'))
-        now_img,next_img = self.get_imgs(img_path)
 
         pair_n = now_state.shape[0]
         assert (pair_n==next_state.shape[0])
         assert (pair_n==action.shape[0])
-        assert (pair_n==len(now_img))
-        assert (pair_n==len(next_img))
 
-        return now_img,next_img,now_state,next_state,action
-
-    def get_imgs(self,img_path):
-        episode_list = os.listdir(img_path)
-        episode_list = sorted(episode_list,key=lambda x:int(x.split('-')[1]))
-        now_imglist,next_imglist = [],[]
-        for dir in episode_list:
-            episode_path = os.path.join(img_path,dir)
-            tmp = os.listdir(episode_path)
-            tmp = sorted(tmp,key=lambda x:int(x.split('_')[-1].split('.')[0]))
-            tmp = [os.path.join(episode_path,x) for x in tmp]
-            now_imglist.extend(tmp[:-1])
-            next_imglist.extend(tmp[1:])
-        return now_imglist,next_imglist
+        return now_state,next_state,action
 
     def get_state_sample(self):
         sample_num = self.sample_num1
@@ -317,7 +255,6 @@ class RobotStackFdata(Data.Dataset):
 
     def __len__(self):
         return self.sample_num1
-        # return 100000
 
     @classmethod
     def get_loader(cls,opt=None):
