@@ -16,7 +16,7 @@ from tensorboardX import SummaryWriter
 
 def safe_path(path):
     if not os.path.exists(path):
-        os.mkdir(path)
+        os.makedirs(path)
     return path
 
 def init_logs(opt):

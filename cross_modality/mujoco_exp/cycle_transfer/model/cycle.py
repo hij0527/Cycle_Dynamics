@@ -255,7 +255,7 @@ class CycleGANModel():
 
     def save(self, path):
         if not os.path.exists(path):
-            os.mkdir(path)
+            os.makedirs(path)
         self.save_network(self.netG_B, 'G_B', path)
         self.save_network(self.netD_B, 'D_B', path)
 

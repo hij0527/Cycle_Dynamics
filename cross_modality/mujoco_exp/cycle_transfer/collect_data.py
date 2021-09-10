@@ -14,7 +14,7 @@ import torch.nn.functional as F
 
 def safe_path(path):
     if not os.path.exists(path):
-        os.mkdir(path)
+        os.makedirs(path)
     return path
 
 
@@ -90,7 +90,7 @@ class CycleData:
             self.add_observation(observation)
             episode_path = os.path.join(self.img_path,'episode-{}'.format(i_episode))
             if not os.path.exists(episode_path):
-                os.mkdir(episode_path)
+                os.makedirs(episode_path)
             path = os.path.join(episode_path, 'img_{}_{}.jpg'.format(i_episode, 0))
             self.check_and_save(path)
             reward_r = 0

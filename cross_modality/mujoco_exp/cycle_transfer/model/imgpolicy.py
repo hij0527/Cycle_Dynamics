@@ -13,7 +13,7 @@ from torchvision import transforms
 
 def safe_path(path):
     if not os.path.exists(path):
-        os.mkdir(path)
+        os.makedirs(path)
     return path
 
 
@@ -124,8 +124,8 @@ class ImgPolicy:
                 done = False
                 episode_r = 0.
                 while not done:
-                    # img, depth = self.env.sim.render(mode='offscreen', camera_name='track', width=256, height=256, depth=True)
-                    img, depth = self.env.sim.render(mode='offscreen', width=256, height=256, depth=True)
+                    img, depth = self.env.sim.render(mode='offscreen', camera_name='track', width=256, height=256, depth=True)
+                    # img, depth = self.env.sim.render(mode='offscreen', width=256, height=256, depth=True)
                     act,pred_obs = self.policy.select_action_from_img(img,imgmodel,obs[2:4])
                     # pred_obs = obs
                     gt.append(obs)
